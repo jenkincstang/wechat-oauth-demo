@@ -1,5 +1,7 @@
 package com.example.demo.controller;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.example.demo.util.ConstantWxUtils;
 import com.google.gson.Gson;
 import org.springframework.data.repository.query.Param;
@@ -7,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URLEncoder;
@@ -19,6 +22,12 @@ public class WxApiController {
 
 //  @Autowired
 //  private UserMemberService memberService;
+
+  @GetMapping("test")
+  @ResponseBody
+  public String test(){
+    return "<h1>Hello World</h1>";
+  }
 
 
   //1.生成微信扫描二维码
@@ -92,7 +101,46 @@ public class WxApiController {
       HashMap mapAccessToken = gson.fromJson(accessTokenInfo.getBody(), HashMap.class);
       String access_token = (String)mapAccessToken.get("access_token");
       String openid = (String)mapAccessToken.get("openid");
-//      //把扫描人信息添加数据库里面
+
+
+      //https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=APPID&secret=APPSECRET
+
+      String baseTokenUrl = "https://api.weixin.qq.com/cgi-bin/token" +
+              "?grant_type=client_credential" +
+              "&appid=%s" +
+              "&secret=%s";
+      String tokenUrlUrl = String.format(
+              baseTokenUrl,
+              ConstantWxUtils.WX_OPEN_APP_ID,
+              ConstantWxUtils.WX_OPEN_APP_SECRET
+      );
+
+      ResponseEntity<String> tokenInfo = restTemplate.getForEntity(tokenUrlUrl,String.class);
+
+
+
+
+
+      //        //获取返回userinfo字符串扫描人信息
+      HashMap tokenInfoMap = gson.fromJson(tokenInfo.getBody(), HashMap.class);
+      String token = (String)tokenInfoMap.get("access_token");
+      System.out.println("Token==>>"+token);
+      //https://api.weixin.qq.com/cgi-bin/menu/create?access_token=ACCESS_TOKEN
+      String baseCreateButtonUrl = "https://api.weixin.qq.com/cgi-bin/menu/create" +
+              "?access_token=%s";
+      //拼接三个参数 ：id  秘钥 和 code值
+      String createButtonUrl = String.format(
+              baseCreateButtonUrl,
+              token
+      );
+      //请求这个拼接好的地址，得到返回两个值 accsess_token 和 openid
+      //使用httpclient发送请求，得到返回结果
+      String buttonJson = "{\"button\": [{\"type\": \"view\", \"name\": \"OOCL\", \"key\": \"EMPLOAN_HTML_LOAN\",\"url\": \"http://2wcrat.natappfree.cc/api/user/wx/test\"}]}";
+      //buttonJson = JSON.toJSONString(buttonJson, SerializerFeature.UseSingleQuotes);
+      ResponseEntity<String> createButtonInfo = restTemplate.postForEntity(createButtonUrl,buttonJson,String.class);
+
+
+      //      //把扫描人信息添加数据库里面
 //      //判断数据表里面是否存在相同微信信息，根据openid判断
 //      UcenterMember member = memberService.getOpenIdMember(openid);
 //      if(member == null) {//memeber是空，表没有相同微信数据，进行添加
@@ -110,7 +158,12 @@ public class WxApiController {
         );
 
           ResponseEntity<String> userInfo = restTemplate.getForEntity(userInfoUrl,String.class);
-//        //获取返回userinfo字符串扫描人信息
+
+
+
+
+
+          //        //获取返回userinfo字符串扫描人信息
           HashMap userInfoMap = gson.fromJson(userInfo.getBody(), HashMap.class);
           String nickname = (String)userInfoMap.get("nickname");//昵称
           String headimgurl = (String)userInfoMap.get("headimgurl");//头像
@@ -118,6 +171,8 @@ public class WxApiController {
           System.out.println(headimgurl);
           System.out.println(userInfoMap);
           System.out.println(userInfo);
+
+
 //
 //        //TODO保存一些用户信息
 //        //TODO........
@@ -127,6 +182,10 @@ public class WxApiController {
 //      String jwtToken = JwtUtils.getJwtToken(member.getId(), member.getNickname());
 ////      //最后：返回首页面，通过路径传递token字符串
 ////      return "redirect:http://www.baidu.com?token="+jwtToken;
+
+      System.out.println("Button Body:>>"+createButtonInfo.getBody());
+      System.out.println("Button Header:>>"+createButtonInfo.getHeaders());
+
       return "redirect:http://www.baidu.com";
     } catch (Exception e) {
 //      throw new GuliException(20001,"登录失败");
