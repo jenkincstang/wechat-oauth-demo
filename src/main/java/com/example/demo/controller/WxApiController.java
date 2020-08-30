@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.UserDto;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
@@ -9,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.RestTemplate;
@@ -29,6 +32,13 @@ public class WxApiController {
     String authorizeUrl = getAuthorizeUrl(baseAuthorizeUrl, redirectUrl, "jenkin");
     // 重定向到请求微信地址里面
     return "redirect:" + authorizeUrl;
+  }
+
+  @PostMapping("register")
+  @ResponseBody
+  public String register(@RequestBody UserDto userDto){
+    System.out.println(userDto);
+    return "Register Successful!";
   }
 
   private String getAuthorizeUrl(String baseAuthorizeUrl, String redirectUrl, String state) {
@@ -100,7 +110,10 @@ public class WxApiController {
       ResponseEntity<String> createButtonInfo =
           restTemplate.postForEntity(createButtonUrl, buttonJson, String.class);
       System.out.println(createButtonInfo.getHeaders()+"\n"+createButtonInfo.getBody());
-      /** 方法回调结束后的跳转地址 */
+
+      /**
+       * 可能要在这里生成token，并将token放入response中
+       * 方法回调结束后的跳转地址 */
       return "redirect:http://www.baidu.com";
     } catch (Exception e) {
       throw new Exception("方法回调出现错误");

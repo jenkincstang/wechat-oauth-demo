@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>Demo</title>
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width" />
+<base href="/" />
+</head>
+<body>
+    <h1 class="unauthenticated" >Register</h1>
+    <h2 class="unauthenticated" >注册页面</h2>
+    <form class="unauthenticated" action="/api/user/wx/register" method="post">
+        <table>
+            <tr>
+                <td>用户名：</td>
+                <td><input type="text" name="username"></td>
+            </tr>
+            <tr>
+                <td>密码：</td>
+                <td><input type="password" name="password"></td>
+            </tr>
+            <tr>
+                <td colspan="2"><button type="submit" value="register">注册用户</button></td>
+            </tr>
+        </table>
+    </form>
+</body>
+</html>
