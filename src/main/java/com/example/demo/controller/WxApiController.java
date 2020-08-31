@@ -1,18 +1,30 @@
 package com.example.demo.controller;
 
+import com.auth0.jwt.exceptions.AlgorithmMismatchException;
+import com.auth0.jwt.exceptions.SignatureVerificationException;
+import com.auth0.jwt.exceptions.TokenExpiredException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.demo.dto.UserDto;
+import com.example.demo.entity.SysUser;
+import com.example.demo.service.SysUserService;
+import com.example.demo.util.TokenUtils;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
 import java.util.HashMap;
 
+import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.query.Param;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.RestTemplate;
 
@@ -24,6 +36,10 @@ import com.google.gson.Gson;
 @Controller
 @RequestMapping("/api/user/wx")
 public class WxApiController {
+
+  @Autowired
+  private SysUserService sysUserService;
+
   @GetMapping("login")
   public String getWxCode() throws UnsupportedEncodingException {
     String baseAuthorizeUrl = getBaseAuthorizeUrl();
@@ -34,11 +50,84 @@ public class WxApiController {
     return "redirect:" + authorizeUrl;
   }
 
-  @PostMapping("register")
+  @PostMapping("user/login")
   @ResponseBody
-  public String register(@RequestBody UserDto userDto){
+  public Map<String,Object> getWxCode(UserDto userDto) throws UnsupportedEncodingException {
+    Map<String,Object> map = new HashMap<>();
+    Map<String,String> payload = new HashMap<>();
+    try{
+      SysUser sysUser = sysUserService.findSysUserByUsername(userDto.getUsername());
+      BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+      String tmp = passwordEncoder.encode(userDto.getPassword());
+
+      if (passwordEncoder.matches(userDto.getPassword(),tmp)){
+        payload.put("userId",sysUser.getId()+"");
+        payload.put("username",sysUser.getUsername());
+        payload.put("email",sysUser.getEmail());
+        String token = TokenUtils.getToken(payload);
+        map.put("state",true);
+        map.put("msg","login successful!");
+        map.put("token",token);
+      }else {
+        map.put("state",false);
+        map.put("msg","wrong password！");
+      }
+    }catch (Exception e){
+      map.put("state",false);
+      map.put("msg","user not exist!");
+    }
+    return map;
+  }
+
+
+  @PostMapping("user/test")
+  @ResponseBody
+  public Map<String,Object> getWxCode(String token) throws UnsupportedEncodingException {
+    Map<String,Object> map = new HashMap<>();
+    try{
+      DecodedJWT jwt = TokenUtils.verify(token);
+      map.put("state",true);
+      map.put("msg","request successful!");
+      return map;
+    }catch (SignatureVerificationException e){
+      map.put("state",false);
+      map.put("msg","SignatureVerificationException");
+    }catch (TokenExpiredException e){
+      map.put("state",false);
+      map.put("msg","TokenExpiredException");
+    }catch (AlgorithmMismatchException e){
+      map.put("state",false);
+      map.put("msg","AlgorithmMismatchException");
+    }catch (Exception e){
+      map.put("state",false);
+      map.put("msg","Exception");
+    }
+    return map;
+  }
+
+
+  @RequestMapping(value = "register", method = RequestMethod.POST)
+  @ResponseBody
+  public String register(UserDto userDto){
     System.out.println(userDto);
-    return "Register Successful!";
+    SysUser sysUser = null;
+    try{
+      sysUser = sysUserService.findSysUserByUsername(userDto.getUsername());
+    }catch (Exception e){
+      sysUser = new SysUser();
+      sysUser.setUsername(userDto.getUsername());
+      BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+      String tmp = passwordEncoder.encode(userDto.getPassword());
+      sysUser.setPassword(tmp);
+//      SysRole adminRole = sysRoleService.getSysRoleByName("ROLE_ADMIN");
+//      SysRole userRole = sysRoleService.getSysRoleByName("ROLE_USER");
+//      List<SysRole> roles = new ArrayList<>();
+//      roles.add(adminRole);
+//      roles.add(userRole);
+//      sysUser.setSysRoles(roles);
+      sysUserService.saveSysUser(sysUser);
+    }
+    return "register successful!";
   }
 
   private String getAuthorizeUrl(String baseAuthorizeUrl, String redirectUrl, String state) {
