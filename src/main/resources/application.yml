@@ -1,0 +1,25 @@
+management:
+  server:
+    port: 8081
+security:
+  basic:
+    enabled: false
+server:
+  port: 80
+spring:
+  application:
+    name: demo
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    username: root
+    password: '@@nrot@@'
+    platform: mysql
+    url: jdbc:mysql://localhost:3306/testdb?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+wx:
+  open:
+    app_id: wx19b353f9dbf17786
+    app_secret: ca3dc108e47b0008b892781ca6e33671
+    redirect_url: http://wechat.test.com/api/user/wx/callback
